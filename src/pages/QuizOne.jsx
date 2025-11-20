@@ -1,201 +1,202 @@
-// src/pages/QuizOne.jsx
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { db } from "../firebase/config";
+import { doc, setDoc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 
-const quizData = [
-  {
-    question: "Q1. What is 170 in Yoruba?",
-    choices: ["ogota", "ogofa", "aadota", "aadojo"],
-    answer: "aadojo",
-  },
-  {
-    question: "Q2. What is 60 in Yoruba?",
-    choices: ["ogota", "ogofa", "aadota", "aadorin"],
-    answer: "ogota",
-  },
-  {
-    question: "Q3. What is 50 in Yoruba?",
-    choices: ["ogota", "ogofa", "aadota", "aadorin"],
-    answer: "aadota",
-  },
-  {
-    question: "Q4. What is 120 in Yoruba?",
-    choices: ["ogota", "ogofa", "aadota", "aadorin"],
-    answer: "ogofa",
-  },
-  {
-    question: "Q5. What is 40 in Yoruba?",
-    choices: ["ogota", "ogoji", "aadota", "aadorin"],
-    answer: "ogoji",
-  },
-  {
-    question: "Q6. What is 200 in Yoruba?",
-    choices: ["oodurun", "ogofa", "igba", "ogorun"],
-    answer: "igba",
-  },
-  {
-    question: "Q7. What is 400 in Yoruba?",
-    choices: ["egberin", "irinwo", "ogorin", "aadorin"],
-    answer: "irinwo",
-  },
-  {
-    question: "Q8. What is 800 in Yoruba?",
-    choices: ["irinwo", "egberin", "aadota", "aadorin"],
-    answer: "egberin",
-  },
-  {
-    question: "Q9. What is 180 in Yoruba?",
-    choices: ["ogosan", "eesan", "aadota", "aadorin"],
-    answer: "ogosan",
-  },
-  {
-    question: "Q10. What is 500 in Yoruba?",
-    choices: ["ogberun", "aarun", "aadota", "eedegbeta"],
-    answer: "eedegbeta",
-  },
+const townsQuiz = [
+  { town: "Ibadan", king: "Olubadan" },
+  { town: "Oyo", king: "Alaafin" },
+  { town: "Abeokuta", king: "Alake" },
+  { town: "Ile-Ife", king: "Ooni" },
+  { town: "Ondo", king: "Osemawe" },
+  { town: "Akure", king: "Deji" },
+  { town: "Saki", king: "Okere" },
+  { town: "Osogbo", king: "Ataoja" },
+  { town: "Ado-Ekiti", king: "Ewi" },
+  { town: "Ede", king: "Oba" },
+  { town: "Ikere-Ekiti", king: "Olukere" },
 ];
 
-export default function QuizOne() {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+const shuffleArray = (array) => array.sort(() => 0.5 - Math.random());
+const generateOptions = (correctKing, allKings) => {
+  const wrongOptions = shuffleArray(allKings.filter(k => k !== correctKing)).slice(0, 3);
+  return shuffleArray([...wrongOptions, correctKing]);
+};
+const generateQuizQuestions = () => {
+  const allKings = townsQuiz.map(t => t.king);
+  const randomTowns = shuffleArray(townsQuiz).slice(0, 10);
+  return randomTowns.map(t => ({
+    question: `Who is the king of ${t.town}?`,
+    options: generateOptions(t.king, allKings),
+    answer: t.king,
+  }));
+};
+
+const QuizTwo = ({ currentUser }) => {
+  const [quizData, setQuizData] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedChoice, setSelectedChoice] = useState("");
   const [score, setScore] = useState(0);
-  const [quizOver, setQuizOver] = useState(false);
-  const [selectedChoice, setSelectedChoice] = useState(null);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
   const [timeLeft, setTimeLeft] = useState(15);
-  const [showAlert, setShowAlert] = useState({ message: "", visible: false });
-  const [quizStarted, setQuizStarted] = useState(false);
+  const [quizOver, setQuizOver] = useState(false);
 
-  // Timer effect
   useEffect(() => {
-    if (!quizStarted || quizOver) return;
+    if (!showQuiz || quizOver) return;
+    if (timeLeft === 0) {
+      handleTimeUp();
+      return;
+    }
+    const timerId = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    return () => clearInterval(timerId);
+  }, [timeLeft, showQuiz, quizOver]);
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const startQuiz = () => {
+    setQuizData(generateQuizQuestions());
+    setShowQuiz(true);
+    setCurrentIndex(0);
+    setScore(0);
+    setQuizOver(false);
+    setSelectedChoice("");
+    setTimeLeft(15);
+  };
 
-    return () => clearInterval(timer);
-  }, [quizStarted, currentQuestion, quizOver]);
+  const handleChoiceClick = choice => setSelectedChoice(choice);
+
+  const displayAlert = msg => {
+    setAlertMsg(msg);
+    setTimeout(() => setAlertMsg(""), 2000);
+  };
 
   const handleTimeUp = () => {
-    showTempAlert("Time's up! Moving to next question.");
+    displayAlert(`Time Up! Correct answer: ${quizData[currentIndex].answer}`);
     nextQuestion();
   };
 
-  const showTempAlert = (message) => {
-    setShowAlert({ message, visible: true });
-    setTimeout(() => setShowAlert({ message: "", visible: false }), 2000);
-  };
-
-  const handleChoiceClick = (choice) => {
-    setSelectedChoice(choice);
-  };
-
-  const checkAnswer = () => {
-    if (!selectedChoice) {
-      showTempAlert("Please select an answer!");
+  const nextQuestion = async () => {
+    if (!selectedChoice && !quizOver) {
+      displayAlert("Please select an answer!");
       return;
     }
 
-    if (selectedChoice === quizData[currentQuestion].answer) {
-      showTempAlert("Correct answer!");
-      setScore((prev) => prev + 1);
-    } else {
-      showTempAlert(
-        `Wrong answer! Correct: ${quizData[currentQuestion].answer}`
-      );
+    if (!quizOver) {
+      if (selectedChoice === quizData[currentIndex].answer) {
+        displayAlert("Correct Answer!");
+        setScore(prev => prev + 1);
+      } else {
+        displayAlert(`Wrong! Correct answer: ${quizData[currentIndex].answer}`);
+      }
     }
 
-    nextQuestion();
-  };
-
-  const nextQuestion = () => {
-    setSelectedChoice(null);
-    if (currentQuestion + 1 < quizData.length) {
-      setCurrentQuestion((prev) => prev + 1);
+    if (currentIndex + 1 < quizData.length) {
+      setCurrentIndex(prev => prev + 1);
+      setSelectedChoice("");
       setTimeLeft(15);
     } else {
       setQuizOver(true);
+      displayAlert("You have completed the quiz!");
+      await saveScoreToFirestore(score + (selectedChoice === quizData[currentIndex].answer ? 1 : 0));
     }
   };
 
-  const restartQuiz = () => {
-    setCurrentQuestion(0);
-    setScore(0);
-    setSelectedChoice(null);
-    setTimeLeft(15);
-    setQuizOver(false);
-    setQuizStarted(true);
+  const saveScoreToFirestore = async finalScore => {
+    if (!currentUser) return;
+    try {
+      const userDocRef = doc(db, "users", currentUser.uid);
+      const userSnapshot = await getDoc(userDocRef);
+      if (userSnapshot.exists()) {
+        await updateDoc(userDocRef, {
+          quizScores: arrayUnion({
+            quiz: "QuizTwo",
+            score: finalScore,
+            date: new Date(),
+          }),
+        });
+      } else {
+        await setDoc(userDocRef, {
+          name: currentUser.displayName,
+          email: currentUser.email,
+          quizScores: [{ quiz: "QuizTwo", score: finalScore, date: new Date() }],
+          createdAt: new Date(),
+        });
+      }
+    } catch (err) {
+      console.error("Error saving score:", err);
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-green-500 flex flex-col items-center justify-center p-4 text-white">
-      <h1 className="text-4xl font-bold mb-2">QUIZ 1</h1>
-      <h2 className="text-2xl text-blue-400 mb-4">NUMBERS IN YORUBA</h2>
+  const getGrade = () => {
+    const percent = (score / quizData.length) * 100;
+    if (percent >= 80) return "Excellent! Keep it up!";
+    if (percent >= 60) return "Good result! You can improve though!";
+    if (percent >= 40) return "Average, try better next time!";
+    return "Poor, you need to study more!";
+  };
 
-      {!quizStarted ? (
+  const playAgain = () => startQuiz();
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#08203e] to-[#13e759] text-white p-4">
+      <h1 className="text-4xl font-bold mb-2">QUIZ 1</h1>
+      <h2 className="text-5xl text-blue-500 font-extrabold mb-2 hover:text-purple-600">LEARN YOUR NUMBERS</h2>
+      <p className="mb-4">Let's hold on to our heritage!</p>
+
+      {alertMsg && <div className="bg-green-700 p-2 rounded mb-4">{alertMsg}</div>}
+
+      {!showQuiz && (
         <button
-          onClick={() => setQuizStarted(true)}
-          className="bg-blue-600 hover:bg-purple-600 px-6 py-3 rounded-lg text-lg font-semibold"
+          onClick={startQuiz}
+          className="bg-blue-600 px-4 py-2 rounded hover:bg-purple-600 mb-4"
         >
           Start Quiz
         </button>
-      ) : quizOver ? (
-        <div className="text-center">
-          <h2 className="text-3xl mb-4">Quiz Completed!</h2>
-          <p className="text-xl mb-4">
-            Your score: {score} / {quizData.length}
-          </p>
-          <button
-            onClick={restartQuiz}
-            className="bg-green-600 hover:bg-blue-600 px-6 py-3 rounded-lg text-lg font-semibold"
-          >
-            Play Again
-          </button>
-        </div>
-      ) : (
-        <div className="w-full max-w-2xl bg-black/50 p-6 rounded-lg shadow-lg">
-          {showAlert.visible && (
-            <div className="mb-4 bg-green-600 text-white p-2 rounded">
-              {showAlert.message}
+      )}
+
+      {showQuiz && quizData.length > 0 && (
+        <div className="container w-full max-w-3xl text-center space-y-4">
+          {!quizOver ? (
+            <>
+              <div className="question text-2xl mb-4">{quizData[currentIndex].question}</div>
+              <div className="choices flex flex-col items-center gap-2">
+                {quizData[currentIndex].options.map(choice => (
+                  <div
+                    key={choice}
+                    className={`choice w-3/5 p-2 rounded cursor-pointer ${
+                      selectedChoice === choice ? "bg-blue-600 text-white" : "bg-gray-200 text-black"
+                    }`}
+                    onClick={() => handleChoiceClick(choice)}
+                  >
+                    {choice}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={nextQuestion}
+                className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500"
+              >
+                Next
+              </button>
+              <div className="timer text-xl mt-2 flex justify-center items-center bg-[#08203e] w-20 h-20 rounded-full border-2 border-red-500">
+                {timeLeft}
+              </div>
+            </>
+          ) : (
+            <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96">
+              <h2 className="text-3xl font-bold">Quiz Completed!</h2>
+              <p className="text-xl">You scored {score} out of {quizData.length}</p>
+              <p className="text-lg">{getGrade()}</p>
+              <button
+                onClick={playAgain}
+                className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
+              >
+                Play Again
+              </button>
             </div>
           )}
-
-          <div className="mb-4 text-xl font-semibold">
-            {quizData[currentQuestion].question}
-          </div>
-
-          <div className="grid gap-4 mb-4">
-            {quizData[currentQuestion].choices.map((choice) => (
-              <div
-                key={choice}
-                onClick={() => handleChoiceClick(choice)}
-                className={`p-3 rounded cursor-pointer text-black font-semibold ${
-                  selectedChoice === choice
-                    ? "bg-blue-500"
-                    : "bg-white/70 hover:bg-white"
-                }`}
-              >
-                {choice}
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-between items-center">
-            <div className="text-lg">Time Left: {timeLeft}s</div>
-            <button
-              onClick={checkAnswer}
-              className="bg-green-600 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold"
-            >
-              Next
-            </button>
-          </div>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default QuizTwo;
