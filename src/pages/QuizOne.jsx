@@ -1,24 +1,35 @@
 // src/pages/QuizOne.jsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
-import { db } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
-// Yoruba numbers quiz questions
-const numberQuestions = [
-  { question: "What is 1 in Yoruba?", options: ["Ọkan", "Eeji", "Eeta", "Eerin"], answer: "Ọkan" },
-  { question: "What is 2 in Yoruba?", options: ["Eeji", "Ọkan", "Eeta", "Eerin"], answer: "Eeji" },
-  { question: "What is 3 in Yoruba?", options: ["Eeta", "Eeji", "Ọkan", "Eerin"], answer: "Eeta" },
-  { question: "What is 4 in Yoruba?", options: ["Eerin", "Eeta", "Eeji", "Ọkan"], answer: "Eerin" },
-  { question: "What is 5 in Yoruba?", options: ["Aarun", "Eefa", "Eje", "Ejo"], answer: "Aarun" },
-  { question: "What is 6 in Yoruba?", options: ["Eefa", "Aarun", "Eje", "Ejo"], answer: "Eefa" },
-  { question: "What is 7 in Yoruba?", options: ["Eje", "Aarun", "Eefa", "Ejo"], answer: "Eje" },
-  { question: "What is 8 in Yoruba?", options: ["Ejo", "Aarun", "Eefa", "Eje"], answer: "Ejo" },
+// Non-linear Yoruba numbers sequence
+const numberSequence = [
+  { num: 1, yoruba: "Ọkan" },
+  { num: 5, yoruba: "Aarun" },
+  { num: 8, yoruba: "Eeta" },
+  { num: 16, yoruba: "Odogun" },
+  { num: 21, yoruba: "Ogúnlá" },
+  { num: 30, yoruba: "Ọgbọ̀n" },
+  { num: 42, yoruba: "Ogójì" },
+  { num: 55, yoruba: "Àádọ́ta" },
+  { num: 68, yoruba: "Ọgọ́rùn-ún-dín-lọ́gọ́ta" },
+  { num: 100, yoruba: "Ọgọrun" },
 ];
 
-const shuffleArray = (array) => array.sort(() => 0.5 - Math.random());
+// Helper to shuffle options
+const shuffleOptions = (options) => [...options].sort(() => 0.5 - Math.random());
+
+// Generate questions
+const numberQuestions = numberSequence.map((item) => ({
+  question: `What is ${item.num} in Yoruba?`,
+  answer: item.yoruba,
+  options: shuffleOptions([
+    item.yoruba,
+    ...shuffleOptions(numberSequence.map(n => n.yoruba).filter(y => y !== item.yoruba)).slice(0, 3)
+  ])
+}));
 
 const QuizOne = () => {
   const { currentUser } = useAuth();
@@ -31,9 +42,7 @@ const QuizOne = () => {
   const [quizOver, setQuizOver] = useState(false);
   const [alertMsg, setAlertMsg] = useState("");
 
-  useEffect(() => {
-    setQuestions(shuffleArray(numberQuestions));
-  }, []);
+  useEffect(() => setQuestions(numberQuestions), []);
 
   const handleChoiceClick = (choice) => setSelectedChoice(choice);
 
@@ -42,40 +51,18 @@ const QuizOne = () => {
     setTimeout(() => setAlertMsg(""), 2000);
   };
 
-  const nextQuestion = async () => {
+  const nextQuestion = () => {
     if (!selectedChoice) {
       displayAlert("Please select an answer!");
       return;
     }
 
-    if (selectedChoice === questions[currentIndex].answer) {
-      displayAlert("Correct!");
-      setScore((prev) => prev + 1);
-    } else {
-      displayAlert(`Wrong! Correct answer: ${questions[currentIndex].answer}`);
-    }
+    if (selectedChoice === questions[currentIndex].answer) setScore(prev => prev + 1);
 
     if (currentIndex + 1 < questions.length) {
-      setCurrentIndex((prev) => prev + 1);
+      setCurrentIndex(prev => prev + 1);
       setSelectedChoice("");
-    } else {
-      setQuizOver(true);
-      // save score to Firestore
-      if (currentUser) {
-        try {
-          const userRef = doc(db, "users", currentUser.uid);
-          await updateDoc(userRef, {
-            quizScores: arrayUnion({
-              quiz: "QuizOne",
-              score,
-              date: new Date(),
-            }),
-          });
-        } catch (err) {
-          console.error("Error saving score:", err);
-        }
-      }
-    }
+    } else setQuizOver(true);
   };
 
   const playAgain = () => {
@@ -83,26 +70,47 @@ const QuizOne = () => {
     setSelectedChoice("");
     setScore(0);
     setQuizOver(false);
-    setQuestions(shuffleArray(numberQuestions));
+    setQuestions(numberQuestions);
   };
+
+  const handleUpgrade = () => {
+    toast("Upgrade to Premium to access full quizzes!");
+    navigate("/subscribe");
+  };
+
+  // Premium check
+  const now = new Date();
+  const expiry = currentUser?.premiumExpiry ? new Date(currentUser.premiumExpiry) : null;
+  if (!currentUser?.isPremium || !expiry || expiry < now) {
+    return (
+      <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96 mx-auto mt-20">
+        <h2 className="text-2xl font-bold">Premium Required!</h2>
+        <p>You need Premium access to play this quiz.</p>
+        <button
+          onClick={handleUpgrade}
+          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300"
+        >
+          Upgrade Now
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#08203e] to-[#13e759] text-white p-4">
-      <h1 className="text-4xl font-bold mb-2">Yoruba Numbers Quiz</h1>
+      <h1 className="text-4xl font-bold mb-2">Quiz One: Yoruba Numbers</h1>
+      {questions.length > 0 && <p className="mb-4">Question {currentIndex + 1} of {questions.length}</p>}
+      {alertMsg && <div className="bg-green-500 p-2 rounded mb-4">{alertMsg}</div>}
 
-      {alertMsg && <div className="bg-green-700 p-2 rounded mb-4">{alertMsg}</div>}
-
-      {!quizOver ? (
+      {!quizOver && questions.length > 0 ? (
         <>
-          <div className="question text-2xl mb-4">{questions[currentIndex]?.question}</div>
-          <div className="choices flex flex-col items-center gap-3 w-full md:w-3/5">
-            {questions[currentIndex]?.options.map((choice) => (
+          <div className="question text-2xl mb-4">{questions[currentIndex].question}</div>
+          <div className="choices flex flex-col items-center gap-2 w-full md:w-3/5">
+            {questions[currentIndex].options.map((choice) => (
               <div
                 key={choice}
-                className={`choice w-full p-3 rounded-lg cursor-pointer text-center font-medium shadow-sm transition-all duration-200 border ${
-                  selectedChoice === choice
-                    ? "bg-blue-600 text-white border-blue-700"
-                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
+                className={`choice w-full p-3 rounded-lg cursor-pointer text-center border border-gray-300 hover:bg-gray-200 hover:text-black transition-all duration-300 ${
+                  selectedChoice === choice ? "bg-blue-600 text-white border-blue-700" : "bg-white text-black"
                 }`}
                 onClick={() => handleChoiceClick(choice)}
               >
@@ -112,7 +120,7 @@ const QuizOne = () => {
           </div>
           <button
             onClick={nextQuestion}
-            className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500 transition-colors duration-200"
+            className="bg-green-700 px-6 py-2 rounded mt-4 hover:bg-green-500"
           >
             Next
           </button>
@@ -123,7 +131,7 @@ const QuizOne = () => {
           <p className="text-xl">You scored {score} out of {questions.length}</p>
           <button
             onClick={playAgain}
-            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500 transition-colors duration-200"
+            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
           >
             Play Again
           </button>

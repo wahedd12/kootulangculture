@@ -4,16 +4,12 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
-// Yoruba numbers and towns quiz
+// Demo questions
 const numberQuestions = [
   { question: "What is 1 in Yoruba?", options: ["Ọkan", "Eeji", "Eeta", "Eerin"], answer: "Ọkan" },
   { question: "What is 2 in Yoruba?", options: ["Eeji", "Ọkan", "Eeta", "Eerin"], answer: "Eeji" },
   { question: "What is 3 in Yoruba?", options: ["Eeta", "Eeji", "Ọkan", "Eerin"], answer: "Eeta" },
-  { question: "What is 4 in Yoruba?", options: ["Eerin", "Eeta", "Eeji", "Ọkan"], answer: "Eerin" },
-  { question: "What is 5 in Yoruba?", options: ["Aarun", "Eefa", "Eje", "Ejo"], answer: "Aarun" },
-  { question: "What is 6 in Yoruba?", options: ["Eefa", "Aarun", "Eje", "Ejo"], answer: "Eefa" },
-  { question: "What is 7 in Yoruba?", options: ["Eje", "Aarun", "Eefa", "Ejo"], answer: "Eje" },
-  { question: "What is 8 in Yoruba?", options: ["Ejo", "Aarun", "Eefa", "Eje"], answer: "Ejo" },
+  { question: "What is 4 in Yoruba?", options: ["Eerin", "Eeji", "Eeta", "Ọkan"], answer: "Eerin" },
 ];
 
 const townsQuestions = [
@@ -23,9 +19,14 @@ const townsQuestions = [
   { question: "Who is the king of Ile-Ife?", options: ["Ooni", "Alake", "Ewi", "Olubadan"], answer: "Ooni" },
 ];
 
-const shuffleArray = (array) => array.sort(() => 0.5 - Math.random());
+// Shuffle helper
+const shuffleArray = (array) => [...array].sort(() => 0.5 - Math.random());
 
-const DemoQuiz = ({ premiumExpired }) => {
+// Shuffle options inside each question
+const shuffleQuestionOptions = (questions) =>
+  questions.map((q) => ({ ...q, options: shuffleArray(q.options) }));
+
+const DemoQuiz = ({ premiumExpired = false }) => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -37,8 +38,10 @@ const DemoQuiz = ({ premiumExpired }) => {
   const [alertMsg, setAlertMsg] = useState("");
 
   useEffect(() => {
-    // Mix number + towns and shuffle
-    setQuestions(shuffleArray([...numberQuestions, ...townsQuestions]));
+    const shuffledQuestions = shuffleQuestionOptions(
+      shuffleArray([...numberQuestions, ...townsQuestions])
+    );
+    setQuestions(shuffledQuestions);
   }, []);
 
   const handleChoiceClick = (choice) => setSelectedChoice(choice);
@@ -70,11 +73,14 @@ const DemoQuiz = ({ premiumExpired }) => {
   };
 
   const playAgain = () => {
+    const reshuffled = shuffleQuestionOptions(
+      shuffleArray([...numberQuestions, ...townsQuestions])
+    );
+    setQuestions(reshuffled);
     setCurrentIndex(0);
     setSelectedChoice("");
     setScore(0);
     setQuizOver(false);
-    setQuestions(shuffleArray([...numberQuestions, ...townsQuestions]));
   };
 
   const handleUpgrade = () => {
@@ -102,20 +108,18 @@ const DemoQuiz = ({ premiumExpired }) => {
       <h1 className="text-4xl font-bold mb-2">Demo Quiz</h1>
       <p className="mb-4">Try this short quiz for free. Upgrade to unlock all quizzes!</p>
 
-      {alertMsg && <div className="bg-green-700 p-2 rounded mb-4">{alertMsg}</div>}
+      {alertMsg && <div className="bg-green-500 p-2 rounded mb-4">{alertMsg}</div>}
 
       {!quizOver ? (
         <>
-          <div className="question text-2xl mb-4">{questions[currentIndex].question}</div>
+          <div className="question text-2xl mb-4">{questions[currentIndex]?.question}</div>
           <div className="choices flex flex-col items-center gap-3 w-full md:w-3/5">
             {questions[currentIndex]?.options.map((choice) => (
               <div
                 key={choice}
-                className={`choice w-full p-3 rounded-lg cursor-pointer text-center font-medium shadow-sm transition-all duration-200 border ${
-                  selectedChoice === choice
-                    ? "bg-blue-600 text-white border-blue-700"
-                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
-                }`}
+                className={`choice w-full p-3 rounded-lg cursor-pointer text-center border border-gray-300 transition-all duration-300
+                  ${selectedChoice === choice ? "bg-blue-600 text-white border-blue-700" : "bg-gray-100 text-black hover:bg-gray-200"}
+                `}
                 onClick={() => handleChoiceClick(choice)}
               >
                 {choice}
@@ -124,7 +128,7 @@ const DemoQuiz = ({ premiumExpired }) => {
           </div>
           <button
             onClick={nextQuestion}
-            className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500 transition-colors duration-200"
+            className="bg-green-700 px-6 py-2 rounded mt-4 hover:bg-green-500"
           >
             Next
           </button>
@@ -135,13 +139,13 @@ const DemoQuiz = ({ premiumExpired }) => {
           <p className="text-xl">You scored {score} out of {questions.length}</p>
           <button
             onClick={playAgain}
-            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500 transition-colors duration-200"
+            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
           >
             Play Again
           </button>
           <button
             onClick={handleUpgrade}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors duration-200"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-purple-600"
           >
             Upgrade to Premium
           </button>
