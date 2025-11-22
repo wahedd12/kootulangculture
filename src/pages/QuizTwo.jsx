@@ -41,7 +41,6 @@ const QuizTwo = () => {
   const [alertMsg, setAlertMsg] = useState("");
 
   useEffect(() => {
-    // Add shuffled options to each question
     const qWithOptions = townsQuestions.map(q => ({
       ...q,
       options: generateOptions(q.answer)
@@ -62,12 +61,19 @@ const QuizTwo = () => {
       return;
     }
 
-    if (selectedChoice === questions[currentIndex].answer) setScore(prev => prev + 1);
+    if (selectedChoice === questions[currentIndex].answer) {
+      setScore(prev => prev + 1);
+      displayAlert("Correct!");
+    } else {
+      displayAlert(`Wrong! Correct answer: ${questions[currentIndex].answer}`);
+    }
 
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex(prev => prev + 1);
       setSelectedChoice("");
-    } else setQuizOver(true);
+    } else {
+      setQuizOver(true);
+    }
   };
 
   const playAgain = () => {
