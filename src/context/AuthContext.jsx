@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "../firebase/config";
 import { 
@@ -11,24 +10,22 @@ import {
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
 
 const AuthContext = createContext();
-
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen for auth state changes
+  // Listen for auth changes and Firestore user updates
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         const userRef = doc(db, "users", user.uid);
-        // Listen for Firestore updates on the user document
         const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
           setCurrentUser({ ...user, ...docSnap.data() });
+          setLoading(false);
         });
-        setLoading(false);
-        return unsubscribeDoc;
+        return unsubscribeDoc; // cleanup Firestore listener
       } else {
         setCurrentUser(null);
         setLoading(false);
@@ -38,11 +35,10 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribeAuth();
   }, []);
 
-  // Sign up function
+  // Sign up
   const signUp = async (displayName, email, password) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName });
-    // Create Firestore document
     await setDoc(doc(db, "users", userCredential.user.uid), {
       email,
       displayName,
@@ -51,15 +47,15 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  // Sign in function
+  // Sign in
   const signIn = (email, password) => signInWithEmailAndPassword(auth, email, password);
 
-  // Sign out function
+  // Sign out
   const signOut = () => firebaseSignOut(auth);
 
   return (
     <AuthContext.Provider value={{ currentUser, loading, signUp, signIn, signOut }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
