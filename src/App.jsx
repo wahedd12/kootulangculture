@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 
 import AuthProvider, { useAuth } from "./context/AuthContext";
@@ -11,6 +11,28 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import QuizOne from "./pages/QuizOne";   // Yoruba Numbers Quiz
 import QuizTwo from "./pages/QuizTwo";
+import DemoQuiz from "./pages/DemoQuiz";
+import Subscribe from "./pages/Subscribe";
+
+const NavItem = ({ to, children, onClick }) => (
+  <Link
+    to={to}
+    className="px-4 py-2 hover:bg-green-600 transition-colors duration-300 rounded"
+    onClick={onClick}
+  >
+    {children}
+  </Link>
+);
+
+const DropdownItem = ({ to, children, onClick }) => (
+  <Link
+    to={to}
+    className="block px-3 py-2 hover:bg-green-600 rounded-md transition-colors duration-300"
+    onClick={onClick}
+  >
+    {children}
+  </Link>
+);
 
 const AppContent = () => {
   const { currentUser, signIn, signUp, signOut } = useAuth();
@@ -62,7 +84,7 @@ const AppContent = () => {
 
         {/* DESKTOP NAV */}
         <nav className="hidden md:flex items-center gap-6 relative">
-          <Link to="/" className="hover:text-green-400 transition-colors duration-300">Home</Link>
+          <NavItem to="/">Home</NavItem>
 
           <div className="relative group">
             <span className={`cursor-pointer ${currentUser ? "hover:text-green-400" : "text-gray-500 cursor-not-allowed"}`}>
@@ -70,14 +92,15 @@ const AppContent = () => {
             </span>
             {currentUser && (
               <div className="absolute left-0 mt-2 bg-[#110303] text-white shadow-xl rounded-xl p-3 w-48 z-20 border border-white opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
-                <Link to="/quiz-one" className="block px-3 py-2 hover:bg-green-600 rounded-md transition-colors duration-300">Quiz One</Link>
-                <Link to="/quiz-two" className="block px-3 py-2 hover:bg-green-600 rounded-md transition-colors duration-300">Quiz Two</Link>
+                <DropdownItem to="/demo-quiz">Demo Quiz</DropdownItem>
+                <DropdownItem to="/quiz-one">Quiz One</DropdownItem>
+                <DropdownItem to="/quiz-two">Quiz Two</DropdownItem>
               </div>
             )}
           </div>
 
-          <Link to="/about" className="hover:text-green-400 transition-colors duration-300">About Us</Link>
-          <Link to="/contact" className="hover:text-green-400 transition-colors duration-300">Contact Us</Link>
+          <NavItem to="/about">About Us</NavItem>
+          <NavItem to="/contact">Contact Us</NavItem>
         </nav>
 
         {/* AUTH BUTTONS DESKTOP */}
@@ -104,7 +127,7 @@ const AppContent = () => {
           )}
         </div>
 
-        {/* MOBILE MENU */}
+        {/* MOBILE MENU BUTTON */}
         <button className="md:hidden text-white focus:outline-none" onClick={() => setShowMobileMenu(!showMobileMenu)}>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {showMobileMenu ? (
@@ -117,22 +140,26 @@ const AppContent = () => {
 
         {/* MOBILE NAV */}
         <div className={`md:hidden absolute top-full left-0 w-full bg-[#110303] border-t border-black flex flex-col z-30 overflow-hidden transition-all duration-300 ${showMobileMenu ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}>
-          <Link to="/" className="px-4 py-2 hover:bg-green-600 transition-colors duration-300" onClick={() => setShowMobileMenu(false)}>Home</Link>
+          <NavItem to="/" onClick={() => setShowMobileMenu(false)}>Home</NavItem>
 
           <div className="relative">
-            <button onClick={() => setShowMobileDropdown(!showMobileDropdown)} className={`w-full text-left px-4 py-2 ${currentUser ? "hover:bg-green-600" : "text-gray-500 cursor-not-allowed"}`}>
+            <button
+              onClick={() => setShowMobileDropdown(!showMobileDropdown)}
+              className={`w-full text-left px-4 py-2 ${currentUser ? "hover:bg-green-600" : "text-gray-500 cursor-not-allowed"}`}
+            >
               Our Apps
             </button>
             {currentUser && (
-              <div className={`flex flex-col overflow-hidden transition-all duration-300 ${showMobileDropdown ? "max-h-40" : "max-h-0"}`}>
-                <Link to="/quiz-one" className="px-4 py-2 hover:bg-green-600 transition-colors duration-300" onClick={() => setShowMobileMenu(false)}>Quiz One</Link>
-                <Link to="/quiz-two" className="px-4 py-2 hover:bg-green-600 transition-colors duration-300" onClick={() => setShowMobileMenu(false)}>Quiz Two</Link>
+              <div className={`flex flex-col overflow-hidden transition-all duration-300 ${showMobileDropdown ? "max-h-52" : "max-h-0"}`}>
+                <DropdownItem to="/demo-quiz" onClick={() => setShowMobileMenu(false)}>Demo Quiz</DropdownItem>
+                <DropdownItem to="/quiz-one" onClick={() => setShowMobileMenu(false)}>Quiz One</DropdownItem>
+                <DropdownItem to="/quiz-two" onClick={() => setShowMobileMenu(false)}>Quiz Two</DropdownItem>
               </div>
             )}
           </div>
 
-          <Link to="/about" className="px-4 py-2 hover:bg-green-600 transition-colors duration-300" onClick={() => setShowMobileMenu(false)}>About Us</Link>
-          <Link to="/contact" className="px-4 py-2 hover:bg-green-600 transition-colors duration-300" onClick={() => setShowMobileMenu(false)}>Contact Us</Link>
+          <NavItem to="/about" onClick={() => setShowMobileMenu(false)}>About Us</NavItem>
+          <NavItem to="/contact" onClick={() => setShowMobileMenu(false)}>Contact Us</NavItem>
         </div>
       </header>
 
@@ -172,18 +199,38 @@ const AppContent = () => {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/quiz-one" element={
+
+          {/* Demo Quiz accessible to logged-in users */}
+          <Route path="/demo-quiz" element={
             <ProtectedRoute>
+              <DemoQuiz />
+            </ProtectedRoute>
+          } />
+
+          {/* Full quizzes accessible only to premium users */}
+          <Route path="/quiz-one" element={
+            <ProtectedRoute premiumOnly={true}>
               <QuizOne />
             </ProtectedRoute>
           } />
           <Route path="/quiz-two" element={
-            <ProtectedRoute>
+            <ProtectedRoute premiumOnly={true}>
               <QuizTwo />
             </ProtectedRoute>
           } />
+
+          {/* Premium subscription page */}
+          <Route path="/subscribe" element={
+            <ProtectedRoute>
+              <Subscribe />
+            </ProtectedRoute>
+          } />
+
+          {/* Redirect unknown routes to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <Toaster position="top-right" />
     </div>
   );
 };
@@ -192,7 +239,6 @@ const App = () => (
   <AuthProvider>
     <Router>
       <AppContent />
-      <Toaster position="top-right" />
     </Router>
   </AuthProvider>
 );

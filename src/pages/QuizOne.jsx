@@ -1,37 +1,39 @@
+// src/pages/QuizOne.jsx
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase/config";
 import { doc, setDoc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 
-const townsQuiz = [
-  { town: "Ibadan", king: "Olubadan" },
-  { town: "Oyo", king: "Alaafin" },
-  { town: "Abeokuta", king: "Alake" },
-  { town: "Ile-Ife", king: "Ooni" },
-  { town: "Ondo", king: "Osemawe" },
-  { town: "Akure", king: "Deji" },
-  { town: "Saki", king: "Okere" },
-  { town: "Osogbo", king: "Ataoja" },
-  { town: "Ado-Ekiti", king: "Ewi" },
-  { town: "Ede", king: "Oba" },
-  { town: "Ikere-Ekiti", king: "Olukere" },
+const numbersQuiz = [
+  { number: 1, yoruba: "Ọ̀kan" },
+  { number: 2, yoruba: "Ẹ̀jì" },
+  { number: 3, yoruba: "Ẹ̀ta" },
+  { number: 4, yoruba: "Ẹ̀rin" },
+  { number: 5, yoruba: "Àrún" },
+  { number: 6, yoruba: "Ẹ̀fà" },
+  { number: 7, yoruba: "Èje" },
+  { number: 8, yoruba: "Ẹ̀jọ" },
+  { number: 9, yoruba: "Ẹ̀sán" },
+  { number: 10, yoruba: "Ẹ̀wá" },
 ];
 
 const shuffleArray = (array) => array.sort(() => 0.5 - Math.random());
-const generateOptions = (correctKing, allKings) => {
-  const wrongOptions = shuffleArray(allKings.filter(k => k !== correctKing)).slice(0, 3);
-  return shuffleArray([...wrongOptions, correctKing]);
+
+const generateOptions = (correct, all) => {
+  const wrongOptions = shuffleArray(all.filter(n => n !== correct)).slice(0, 3);
+  return shuffleArray([...wrongOptions, correct]);
 };
+
 const generateQuizQuestions = () => {
-  const allKings = townsQuiz.map(t => t.king);
-  const randomTowns = shuffleArray(townsQuiz).slice(0, 10);
-  return randomTowns.map(t => ({
-    question: `Who is the king of ${t.town}?`,
-    options: generateOptions(t.king, allKings),
-    answer: t.king,
+  const allNumbers = numbersQuiz.map(n => n.yoruba);
+  const randomNumbers = shuffleArray(numbersQuiz).slice(0, 10);
+  return randomNumbers.map(n => ({
+    question: `What is the Yoruba word for ${n.number}?`,
+    options: generateOptions(n.yoruba, allNumbers),
+    answer: n.yoruba,
   }));
 };
 
-const QuizTwo = ({ currentUser }) => {
+const QuizOne = ({ currentUser }) => {
   const [quizData, setQuizData] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState("");
@@ -107,7 +109,7 @@ const QuizTwo = ({ currentUser }) => {
       if (userSnapshot.exists()) {
         await updateDoc(userDocRef, {
           quizScores: arrayUnion({
-            quiz: "QuizTwo",
+            quiz: "QuizOne",
             score: finalScore,
             date: new Date(),
           }),
@@ -116,7 +118,7 @@ const QuizTwo = ({ currentUser }) => {
         await setDoc(userDocRef, {
           name: currentUser.displayName,
           email: currentUser.email,
-          quizScores: [{ quiz: "QuizTwo", score: finalScore, date: new Date() }],
+          quizScores: [{ quiz: "QuizOne", score: finalScore, date: new Date() }],
           createdAt: new Date(),
         });
       }
@@ -139,7 +141,7 @@ const QuizTwo = ({ currentUser }) => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#08203e] to-[#13e759] text-white p-4">
       <h1 className="text-4xl font-bold mb-2">QUIZ 1</h1>
       <h2 className="text-5xl text-blue-500 font-extrabold mb-2 hover:text-purple-600">LEARN YOUR NUMBERS</h2>
-      <p className="mb-4">Let's hold on to our heritage!</p>
+      <p className="mb-4">Test your knowledge of Yoruba numbers!</p>
 
       {alertMsg && <div className="bg-green-700 p-2 rounded mb-4">{alertMsg}</div>}
 
@@ -199,4 +201,4 @@ const QuizTwo = ({ currentUser }) => {
   );
 };
 
-export default QuizTwo;
+export default QuizOne;
