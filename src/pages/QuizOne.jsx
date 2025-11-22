@@ -1,10 +1,9 @@
-// src/pages/QuizOne.jsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
-// Non-linear Yoruba numbers sequence
+// Non-linear Yoruba numbers
 const numberSequence = [
   { num: 1, yoruba: "Ọkan" },
   { num: 5, yoruba: "Aarun" },
@@ -18,10 +17,10 @@ const numberSequence = [
   { num: 100, yoruba: "Ọgọrun" },
 ];
 
-// Helper to shuffle options
+// Shuffle helper
 const shuffleOptions = (options) => [...options].sort(() => 0.5 - Math.random());
 
-// Generate questions
+// Generate questions with options
 const numberQuestions = numberSequence.map((item) => ({
   question: `What is ${item.num} in Yoruba?`,
   answer: item.yoruba,
@@ -57,19 +56,12 @@ const QuizOne = () => {
       return;
     }
 
-    if (selectedChoice === questions[currentIndex].answer) {
-      setScore(prev => prev + 1);
-      displayAlert("Correct!");
-    } else {
-      displayAlert(`Wrong! Correct answer: ${questions[currentIndex].answer}`);
-    }
+    if (selectedChoice === questions[currentIndex].answer) setScore(prev => prev + 1);
 
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex(prev => prev + 1);
       setSelectedChoice("");
-    } else {
-      setQuizOver(true);
-    }
+    } else setQuizOver(true);
   };
 
   const playAgain = () => {
@@ -80,21 +72,18 @@ const QuizOne = () => {
     setQuestions(numberQuestions);
   };
 
-  const handleUpgrade = () => {
-    toast("Upgrade to Premium to access full quizzes!");
-    navigate("/subscribe");
-  };
-
   // Premium check
   const now = new Date();
   const expiry = currentUser?.premiumExpiry ? new Date(currentUser.premiumExpiry) : null;
-  if (!currentUser?.isPremium || !expiry || expiry < now) {
+  const hasPremium = currentUser?.isPremium && expiry && expiry > now;
+
+  if (!hasPremium) {
     return (
       <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96 mx-auto mt-20">
         <h2 className="text-2xl font-bold">Premium Required!</h2>
         <p>You need Premium access to play this quiz.</p>
         <button
-          onClick={handleUpgrade}
+          onClick={() => navigate("/subscribe")}
           className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300"
         >
           Upgrade Now

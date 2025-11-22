@@ -1,9 +1,10 @@
-// src/App.jsx
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 
-import AuthProvider, { useAuth } from "./context/AuthContext";
+// ✅ Corrected import: AuthProvider is now a named export
+import { AuthProvider, useAuth } from "./context/AuthContext";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
@@ -13,6 +14,7 @@ import QuizOne from "./pages/QuizOne";   // Yoruba Numbers Quiz
 import QuizTwo from "./pages/QuizTwo";
 import DemoQuiz from "./pages/DemoQuiz";
 import Subscribe from "./pages/Subscribe";
+
 
 const NavItem = ({ to, children, onClick }) => (
   <Link

@@ -1,4 +1,3 @@
-// src/pages/QuizTwo.jsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -20,13 +19,9 @@ const townsQuestions = [
 
 // Shuffle helper
 const shuffleArray = (array) => [...array].sort(() => 0.5 - Math.random());
-
-// Generate options for each question
 const generateOptions = (correctAnswer) => {
-  const otherAnswers = townsQuestions
-    .map(q => q.answer)
-    .filter(ans => ans !== correctAnswer);
-  return shuffleArray([correctAnswer, ...shuffleArray(otherAnswers).slice(0, 3)]);
+  const otherAnswers = townsQuestions.map(q => q.answer).filter(ans => ans !== correctAnswer);
+  return shuffleArray([correctAnswer, ...shuffleArray(otherAnswers).slice(0,3)]);
 };
 
 const QuizTwo = () => {
@@ -41,68 +36,44 @@ const QuizTwo = () => {
   const [alertMsg, setAlertMsg] = useState("");
 
   useEffect(() => {
-    const qWithOptions = townsQuestions.map(q => ({
-      ...q,
-      options: generateOptions(q.answer)
-    }));
+    const qWithOptions = townsQuestions.map(q => ({ ...q, options: generateOptions(q.answer) }));
     setQuestions(shuffleArray(qWithOptions));
   }, []);
 
   const handleChoiceClick = (choice) => setSelectedChoice(choice);
-
   const displayAlert = (msg) => {
     setAlertMsg(msg);
     setTimeout(() => setAlertMsg(""), 2000);
   };
-
   const nextQuestion = () => {
     if (!selectedChoice) {
       displayAlert("Please select an answer!");
       return;
     }
-
-    if (selectedChoice === questions[currentIndex].answer) {
-      setScore(prev => prev + 1);
-      displayAlert("Correct!");
-    } else {
-      displayAlert(`Wrong! Correct answer: ${questions[currentIndex].answer}`);
-    }
-
+    if (selectedChoice === questions[currentIndex].answer) setScore(prev => prev + 1);
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex(prev => prev + 1);
       setSelectedChoice("");
-    } else {
-      setQuizOver(true);
-    }
+    } else setQuizOver(true);
   };
-
   const playAgain = () => {
-    setCurrentIndex(0);
-    setSelectedChoice("");
-    setScore(0);
-    setQuizOver(false);
-    const qWithOptions = townsQuestions.map(q => ({
-      ...q,
-      options: generateOptions(q.answer)
-    }));
+    const qWithOptions = townsQuestions.map(q => ({ ...q, options: generateOptions(q.answer) }));
     setQuestions(shuffleArray(qWithOptions));
-  };
-
-  const handleUpgrade = () => {
-    toast("Upgrade to Premium to access full quizzes!");
-    navigate("/subscribe");
+    setCurrentIndex(0); setSelectedChoice(""); setScore(0); setQuizOver(false);
   };
 
   // Premium check
   const now = new Date();
   const expiry = currentUser?.premiumExpiry ? new Date(currentUser.premiumExpiry) : null;
-  if (!currentUser?.isPremium || !expiry || expiry < now) {
+  const hasPremium = currentUser?.isPremium && expiry && expiry > now;
+
+  if (!hasPremium) {
     return (
       <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96 mx-auto mt-20">
         <h2 className="text-2xl font-bold">Premium Required!</h2>
         <p>You need Premium access to play this quiz.</p>
         <button
-          onClick={handleUpgrade}
+          onClick={() => navigate("/subscribe")}
           className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300"
         >
           Upgrade Now
