@@ -4,17 +4,21 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
-// Demo questions: 8 questions, mix numbers + towns, randomized
+// Yoruba numbers and towns quiz
 const numberQuestions = [
-  { question: "What is 1 in Yoruba?", options: ["Ọkan", "Eeji", "Mẹta", "Mẹrin"], answer: "Ọkan" },
-  { question: "What is 2 in Yoruba?", options: ["Ọkan", "Eeji", "Mẹta", "Mẹrin"], answer: "Eeji" },
-  { question: "What is 3 in Yoruba?", options: ["Mẹta", "Eeji", "Mẹrin", "Marun"], answer: "Mẹta" },
-  { question: "What is 4 in Yoruba?", options: ["Mẹrin", "Marun", "Mẹfa", "Mẹta"], answer: "Mẹrin" },
+  { question: "What is 1 in Yoruba?", options: ["Ọkan", "Eeji", "Eeta", "Eerin"], answer: "Ọkan" },
+  { question: "What is 2 in Yoruba?", options: ["Eeji", "Ọkan", "Eeta", "Eerin"], answer: "Eeji" },
+  { question: "What is 3 in Yoruba?", options: ["Eeta", "Eeji", "Ọkan", "Eerin"], answer: "Eeta" },
+  { question: "What is 4 in Yoruba?", options: ["Eerin", "Eeta", "Eeji", "Ọkan"], answer: "Eerin" },
+  { question: "What is 5 in Yoruba?", options: ["Aarun", "Eefa", "Eje", "Ejo"], answer: "Aarun" },
+  { question: "What is 6 in Yoruba?", options: ["Eefa", "Aarun", "Eje", "Ejo"], answer: "Eefa" },
+  { question: "What is 7 in Yoruba?", options: ["Eje", "Aarun", "Eefa", "Ejo"], answer: "Eje" },
+  { question: "What is 8 in Yoruba?", options: ["Ejo", "Aarun", "Eefa", "Eje"], answer: "Ejo" },
 ];
 
 const townsQuestions = [
   { question: "Who is the king of Ibadan?", options: ["Olubadan", "Alaafin", "Ooni", "Deji"], answer: "Olubadan" },
-  { question: "Who is the king of Oyo?", options: ["Olubadan", "Alaafin", "Ooni", "Ewi"], answer: "Alaafin" },
+  { question: "Who is the king of Oyo?", options: ["Alaafin", "Olubadan", "Ooni", "Ewi"], answer: "Alaafin" },
   { question: "Who is the king of Abeokuta?", options: ["Alake", "Olubadan", "Osemawe", "Deji"], answer: "Alake" },
   { question: "Who is the king of Ile-Ife?", options: ["Ooni", "Alake", "Ewi", "Olubadan"], answer: "Ooni" },
 ];
@@ -103,12 +107,14 @@ const DemoQuiz = ({ premiumExpired }) => {
       {!quizOver ? (
         <>
           <div className="question text-2xl mb-4">{questions[currentIndex].question}</div>
-          <div className="choices flex flex-col items-center gap-2">
-            {questions[currentIndex].options.map((choice) => (
+          <div className="choices flex flex-col items-center gap-3 w-full md:w-3/5">
+            {questions[currentIndex]?.options.map((choice) => (
               <div
                 key={choice}
-                className={`choice w-full md:w-3/5 p-2 rounded cursor-pointer text-center ${
-                  selectedChoice === choice ? "bg-blue-600 text-white" : "bg-gray-200 text-black"
+                className={`choice w-full p-3 rounded-lg cursor-pointer text-center font-medium shadow-sm transition-all duration-200 border ${
+                  selectedChoice === choice
+                    ? "bg-blue-600 text-white border-blue-700"
+                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
                 }`}
                 onClick={() => handleChoiceClick(choice)}
               >
@@ -118,7 +124,7 @@ const DemoQuiz = ({ premiumExpired }) => {
           </div>
           <button
             onClick={nextQuestion}
-            className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500"
+            className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500 transition-colors duration-200"
           >
             Next
           </button>
@@ -129,13 +135,13 @@ const DemoQuiz = ({ premiumExpired }) => {
           <p className="text-xl">You scored {score} out of {questions.length}</p>
           <button
             onClick={playAgain}
-            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
+            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500 transition-colors duration-200"
           >
             Play Again
           </button>
           <button
             onClick={handleUpgrade}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-purple-600"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors duration-200"
           >
             Upgrade to Premium
           </button>

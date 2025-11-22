@@ -1,26 +1,29 @@
 // src/pages/QuizOne.jsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { db } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
-// Yoruba Numbers Quiz 10 questions randomized
+// Yoruba numbers quiz questions
 const numberQuestions = [
-  { number: 1, answer: "Ọkan" },
-  { number: 2, answer: "Eeji" },
-  { number: 3, answer: "Mẹta" },
-  { number: 4, answer: "Mẹrin" },
-  { number: 5, answer: "Marun" },
-  { number: 6, answer: "Mẹfa" },
-  { number: 7, answer: "Meje" },
-  { number: 8, answer: "Mẹjọ" },
-  { number: 9, answer: "Mẹsan" },
-  { number: 10, answer: "Mẹwa" },
+  { question: "What is 1 in Yoruba?", options: ["Ọkan", "Eeji", "Eeta", "Eerin"], answer: "Ọkan" },
+  { question: "What is 2 in Yoruba?", options: ["Eeji", "Ọkan", "Eeta", "Eerin"], answer: "Eeji" },
+  { question: "What is 3 in Yoruba?", options: ["Eeta", "Eeji", "Ọkan", "Eerin"], answer: "Eeta" },
+  { question: "What is 4 in Yoruba?", options: ["Eerin", "Eeta", "Eeji", "Ọkan"], answer: "Eerin" },
+  { question: "What is 5 in Yoruba?", options: ["Aarun", "Eefa", "Eje", "Ejo"], answer: "Aarun" },
+  { question: "What is 6 in Yoruba?", options: ["Eefa", "Aarun", "Eje", "Ejo"], answer: "Eefa" },
+  { question: "What is 7 in Yoruba?", options: ["Eje", "Aarun", "Eefa", "Ejo"], answer: "Eje" },
+  { question: "What is 8 in Yoruba?", options: ["Ejo", "Aarun", "Eefa", "Eje"], answer: "Ejo" },
 ];
 
 const shuffleArray = (array) => array.sort(() => 0.5 - Math.random());
 
-const QuizOne = ({ premiumExpired }) => {
+const QuizOne = () => {
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
+
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState("");
@@ -29,11 +32,7 @@ const QuizOne = ({ premiumExpired }) => {
   const [alertMsg, setAlertMsg] = useState("");
 
   useEffect(() => {
-    setQuestions(shuffleArray(numberQuestions).slice(0, 10).map(q => {
-      const options = shuffleArray([q.answer, "Ọkan", "Eeji", "Mẹta", "Mẹrin"]).slice(0,4);
-      if (!options.includes(q.answer)) options[0] = q.answer;
-      return {...q, options: shuffleArray(options)};
-    }));
+    setQuestions(shuffleArray(numberQuestions));
   }, []);
 
   const handleChoiceClick = (choice) => setSelectedChoice(choice);
@@ -43,7 +42,7 @@ const QuizOne = ({ premiumExpired }) => {
     setTimeout(() => setAlertMsg(""), 2000);
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (!selectedChoice) {
       displayAlert("Please select an answer!");
       return;
@@ -51,16 +50,31 @@ const QuizOne = ({ premiumExpired }) => {
 
     if (selectedChoice === questions[currentIndex].answer) {
       displayAlert("Correct!");
-      setScore(prev => prev + 1);
+      setScore((prev) => prev + 1);
     } else {
       displayAlert(`Wrong! Correct answer: ${questions[currentIndex].answer}`);
     }
 
     if (currentIndex + 1 < questions.length) {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex((prev) => prev + 1);
       setSelectedChoice("");
     } else {
       setQuizOver(true);
+      // save score to Firestore
+      if (currentUser) {
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          await updateDoc(userRef, {
+            quizScores: arrayUnion({
+              quiz: "QuizOne",
+              score,
+              date: new Date(),
+            }),
+          });
+        } catch (err) {
+          console.error("Error saving score:", err);
+        }
+      }
     }
   };
 
@@ -69,44 +83,26 @@ const QuizOne = ({ premiumExpired }) => {
     setSelectedChoice("");
     setScore(0);
     setQuizOver(false);
-    setQuestions(shuffleArray(numberQuestions).slice(0, 10).map(q => {
-      const options = shuffleArray([q.answer, "Ọkan", "Eeji", "Mẹta", "Mẹrin"]).slice(0,4);
-      if (!options.includes(q.answer)) options[0] = q.answer;
-      return {...q, options: shuffleArray(options)};
-    }));
+    setQuestions(shuffleArray(numberQuestions));
   };
-
-  if (premiumExpired) {
-    return (
-      <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96 mx-auto mt-20">
-        <h2 className="text-2xl font-bold">Premium Required!</h2>
-        <p>Your Premium access has expired. Renew to continue full quizzes.</p>
-        <button
-          onClick={() => navigate("/subscribe")}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300"
-        >
-          Renew Premium
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#08203e] to-[#13e759] text-white p-4">
-      <h1 className="text-4xl font-bold mb-2">Quiz One</h1>
-      <p className="mb-4">Learn Yoruba Numbers!</p>
+      <h1 className="text-4xl font-bold mb-2">Yoruba Numbers Quiz</h1>
 
       {alertMsg && <div className="bg-green-700 p-2 rounded mb-4">{alertMsg}</div>}
 
-      {!quizOver && questions.length > 0 ? (
+      {!quizOver ? (
         <>
-          <div className="question text-2xl mb-4">What is {questions[currentIndex].number} in Yoruba?</div>
-          <div className="choices flex flex-col items-center gap-2">
-            {questions[currentIndex].options.map(choice => (
+          <div className="question text-2xl mb-4">{questions[currentIndex]?.question}</div>
+          <div className="choices flex flex-col items-center gap-3 w-full md:w-3/5">
+            {questions[currentIndex]?.options.map((choice) => (
               <div
                 key={choice}
-                className={`choice w-full md:w-3/5 p-2 rounded cursor-pointer text-center ${
-                  selectedChoice === choice ? "bg-blue-600 text-white" : "bg-gray-200 text-black"
+                className={`choice w-full p-3 rounded-lg cursor-pointer text-center font-medium shadow-sm transition-all duration-200 border ${
+                  selectedChoice === choice
+                    ? "bg-blue-600 text-white border-blue-700"
+                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
                 }`}
                 onClick={() => handleChoiceClick(choice)}
               >
@@ -116,7 +112,7 @@ const QuizOne = ({ premiumExpired }) => {
           </div>
           <button
             onClick={nextQuestion}
-            className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500"
+            className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500 transition-colors duration-200"
           >
             Next
           </button>
@@ -127,7 +123,7 @@ const QuizOne = ({ premiumExpired }) => {
           <p className="text-xl">You scored {score} out of {questions.length}</p>
           <button
             onClick={playAgain}
-            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
+            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500 transition-colors duration-200"
           >
             Play Again
           </button>

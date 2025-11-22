@@ -30,7 +30,7 @@ const Subscribe = () => {
   const paystackProps = {
     email: currentUser?.email,
     amount: 5000 * 100, // 5000 NGN in kobo
-    publicKey: "pk_test_XXXXXXXXXXXXXXXXXXXX",
+    publicKey: "sk_test_c8ca1c3994df29f667685b63c46fc128f9e12a8d",
     currency: "NGN",
     text: "Upgrade to Premium (₦5,000 / 1 month)",
     onSuccess: () => handleUpgradeBackend(),
