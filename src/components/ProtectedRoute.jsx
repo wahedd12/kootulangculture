@@ -6,11 +6,6 @@ import { toast } from "react-hot-toast";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
-/**
- * Props:
- * - children: the component to render
- * - premiumOnly: boolean (default false) → if true, only premium users can access
- */
 const ProtectedRoute = ({ children, premiumOnly = false }) => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -33,6 +28,7 @@ const ProtectedRoute = ({ children, premiumOnly = false }) => {
       }
       setLoading(false);
     };
+
     checkPremium();
   }, [currentUser, premiumOnly]);
 
@@ -43,12 +39,10 @@ const ProtectedRoute = ({ children, premiumOnly = false }) => {
 
   if (loading) return <div className="text-center mt-20">Loading...</div>;
 
-  if (premiumOnly && !isPremium) {
-    toast.error("This content is for Premium users only!");
-    return <Navigate to="/subscribe" replace />;
-  }
-
-  return children;
+  // Pass `premiumExpired` to children instead of redirecting
+  return React.cloneElement(children, {
+    premiumExpired: premiumOnly && !isPremium,
+  });
 };
 
 export default ProtectedRoute;

@@ -1,6 +1,6 @@
+// src/pages/QuizTwo.jsx
 import React, { useState, useEffect } from "react";
-import { db } from "../firebase/config";
-import { doc, setDoc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 const townsQuiz = [
   { town: "Ibadan", king: "Olubadan" },
@@ -17,178 +17,122 @@ const townsQuiz = [
 ];
 
 const shuffleArray = (array) => array.sort(() => 0.5 - Math.random());
+
 const generateOptions = (correctKing, allKings) => {
   const wrongOptions = shuffleArray(allKings.filter(k => k !== correctKing)).slice(0, 3);
   return shuffleArray([...wrongOptions, correctKing]);
 };
-const generateQuizQuestions = () => {
-  const allKings = townsQuiz.map(t => t.king);
-  const randomTowns = shuffleArray(townsQuiz).slice(0, 10);
-  return randomTowns.map(t => ({
-    question: `Who is the king of ${t.town}?`,
-    options: generateOptions(t.king, allKings),
-    answer: t.king,
-  }));
-};
 
-const QuizTwo = ({ currentUser }) => {
-  const [quizData, setQuizData] = useState([]);
+const QuizTwo = ({ premiumExpired }) => {
+  const navigate = useNavigate();
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState("");
   const [score, setScore] = useState(0);
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [alertMsg, setAlertMsg] = useState("");
-  const [timeLeft, setTimeLeft] = useState(15);
   const [quizOver, setQuizOver] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
 
-  // Timer effect
   useEffect(() => {
-    if (!showQuiz || quizOver) return;
-    if (timeLeft === 0) {
-      handleTimeUp();
-      return;
-    }
-    const timerId = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-    return () => clearInterval(timerId);
-  }, [timeLeft, showQuiz, quizOver]);
-
-  const startQuiz = () => {
-    setQuizData(generateQuizQuestions());
-    setShowQuiz(true);
-    setCurrentIndex(0);
-    setScore(0);
-    setQuizOver(false);
-    setSelectedChoice("");
-    setTimeLeft(15);
-  };
+    const allKings = townsQuiz.map(t => t.king);
+    const randomTowns = shuffleArray(townsQuiz).slice(0, 10);
+    setQuestions(randomTowns.map(t => ({
+      question: `Who is the king of ${t.town}?`,
+      options: generateOptions(t.king, allKings),
+      answer: t.king,
+    })));
+  }, []);
 
   const handleChoiceClick = (choice) => setSelectedChoice(choice);
+  const displayAlert = (msg) => { setAlertMsg(msg); setTimeout(() => setAlertMsg(""), 2000); };
 
-  const displayAlert = (msg) => {
-    setAlertMsg(msg);
-    setTimeout(() => setAlertMsg(""), 2000);
-  };
+  const nextQuestion = () => {
+    if (!selectedChoice) { displayAlert("Please select an answer!"); return; }
 
-  const handleTimeUp = () => {
-    displayAlert(`Time's up! Correct answer: ${quizData[currentIndex].answer}`);
-    nextQuestion();
-  };
-
-  const nextQuestion = async () => {
-    if (!selectedChoice && !quizOver) {
-      displayAlert("Please select an answer!");
-      return;
+    if (selectedChoice === questions[currentIndex].answer) {
+      displayAlert("Correct!");
+      setScore(prev => prev + 1);
+    } else {
+      displayAlert(`Wrong! Correct answer: ${questions[currentIndex].answer}`);
     }
 
-    if (!quizOver) {
-      if (selectedChoice === quizData[currentIndex].answer) {
-        displayAlert("Correct!");
-        setScore(prev => prev + 1);
-      } else {
-        displayAlert(`Wrong! Correct answer: ${quizData[currentIndex].answer}`);
-      }
-    }
-
-    if (currentIndex + 1 < quizData.length) {
+    if (currentIndex + 1 < questions.length) {
       setCurrentIndex(prev => prev + 1);
       setSelectedChoice("");
-      setTimeLeft(15);
     } else {
       setQuizOver(true);
-      displayAlert("Quiz Completed!");
-      await saveScoreToFirestore(score + (selectedChoice === quizData[currentIndex].answer ? 1 : 0));
     }
   };
 
-  const saveScoreToFirestore = async (finalScore) => {
-    if (!currentUser) return;
-    try {
-      const userDocRef = doc(db, "users", currentUser.uid);
-      const userSnapshot = await getDoc(userDocRef);
-      if (userSnapshot.exists()) {
-        await updateDoc(userDocRef, {
-          quizScores: arrayUnion({
-            quiz: "QuizTwo",
-            score: finalScore,
-            date: new Date(),
-          }),
-        });
-      } else {
-        await setDoc(userDocRef, {
-          name: currentUser.displayName,
-          email: currentUser.email,
-          quizScores: [{ quiz: "QuizTwo", score: finalScore, date: new Date() }],
-          createdAt: new Date(),
-        });
-      }
-    } catch (err) {
-      console.error("Error saving score:", err);
-    }
+  const playAgain = () => {
+    setCurrentIndex(0);
+    setSelectedChoice("");
+    setScore(0);
+    setQuizOver(false);
+
+    const allKings = townsQuiz.map(t => t.king);
+    const randomTowns = shuffleArray(townsQuiz).slice(0, 10);
+    setQuestions(randomTowns.map(t => ({
+      question: `Who is the king of ${t.town}?`,
+      options: generateOptions(t.king, allKings),
+      answer: t.king,
+    })));
   };
 
-  const getGrade = () => {
-    const percent = (score / quizData.length) * 100;
-    if (percent >= 80) return "Excellent! Keep it up!";
-    if (percent >= 60) return "Good result! You can improve though!";
-    if (percent >= 40) return "Average, try better next time!";
-    return "Poor, you need to study more!";
-  };
+  if (premiumExpired) {
+    return (
+      <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96 mx-auto mt-20">
+        <h2 className="text-2xl font-bold">Premium Required!</h2>
+        <p>Your Premium access has expired. Renew to continue full quizzes.</p>
+        <button
+          onClick={() => navigate("/subscribe")}
+          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300"
+        >
+          Renew Premium
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#08203e] to-[#13e759] text-white p-4">
-      <h1 className="text-4xl font-bold mb-2">QUIZ 2</h1>
-      <h2 className="text-5xl text-blue-500 font-extrabold mb-2 hover:text-purple-600">TOWNS AND THEIR KINGS</h2>
-      <p className="mb-4">Preserve our heritage by testing your knowledge!</p>
+      <h1 className="text-4xl font-bold mb-2">Quiz Two</h1>
+      <p className="mb-4">Learn Yoruba Towns & Their Kings!</p>
 
       {alertMsg && <div className="bg-green-700 p-2 rounded mb-4">{alertMsg}</div>}
 
-      {!showQuiz && (
-        <button onClick={startQuiz} className="bg-blue-600 px-4 py-2 rounded hover:bg-purple-600 mb-4">
-          Start Quiz
-        </button>
-      )}
-
-      {showQuiz && quizData.length > 0 && (
-        <div className="container w-full max-w-3xl text-center space-y-4">
-          {!quizOver ? (
-            <>
-              <div className="question text-2xl mb-4">{quizData[currentIndex].question}</div>
-              <div className="choices flex flex-col items-center gap-2">
-                {quizData[currentIndex].options.map(choice => (
-                  <div
-                    key={choice}
-                    className={`choice w-3/5 p-2 rounded cursor-pointer ${
-                      selectedChoice === choice ? "bg-blue-600 text-white" : "bg-gray-200 text-black"
-                    }`}
-                    onClick={() => handleChoiceClick(choice)}
-                  >
-                    {choice}
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={nextQuestion}
-                className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500"
+      {!quizOver && questions.length > 0 ? (
+        <>
+          <div className="question text-2xl mb-4">{questions[currentIndex].question}</div>
+          <div className="choices flex flex-col items-center gap-2">
+            {questions[currentIndex].options.map(choice => (
+              <div
+                key={choice}
+                className={`choice w-full md:w-3/5 p-2 rounded cursor-pointer text-center ${
+                  selectedChoice === choice ? "bg-blue-600 text-white" : "bg-gray-200 text-black"
+                }`}
+                onClick={() => handleChoiceClick(choice)}
               >
-                Next
-              </button>
-              <div className="timer text-xl mt-2 flex justify-center items-center bg-[#08203e] w-20 h-20 rounded-full border-2 border-red-500">
-                {timeLeft}
+                {choice}
               </div>
-            </>
-          ) : (
-            <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96">
-              <h2 className="text-3xl font-bold">Quiz Completed!</h2>
-              <p className="text-xl">You scored {score} out of {quizData.length}</p>
-              <p className="text-lg">{getGrade()}</p>
-              <button
-                onClick={startQuiz}
-                className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
-              >
-                Play Again
-              </button>
-            </div>
-          )}
+            ))}
+          </div>
+          <button
+            onClick={nextQuestion}
+            className="bg-green-700 px-4 py-2 rounded mt-4 hover:bg-green-500"
+          >
+            Next
+          </button>
+        </>
+      ) : (
+        <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96">
+          <h2 className="text-3xl font-bold">Quiz Completed!</h2>
+          <p className="text-xl">You scored {score} out of {questions.length}</p>
+          <button
+            onClick={playAgain}
+            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
+          >
+            Play Again
+          </button>
         </div>
       )}
     </div>
