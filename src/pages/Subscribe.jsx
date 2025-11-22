@@ -18,7 +18,6 @@ const Subscribe = () => {
       const userRef = doc(db, "users", currentUser.uid);
       const userSnap = await getDoc(userRef);
 
-      const now = new Date();
       const expiry = new Date();
       expiry.setMonth(expiry.getMonth() + 1); // 1 month premium
 
@@ -30,11 +29,13 @@ const Subscribe = () => {
       } else {
         await setDoc(userRef, {
           email: currentUser.email,
+          displayName: currentUser.displayName || "",
           isPremium: true,
           premiumExpiry: expiry.toISOString(),
         });
       }
 
+      // Force Firestore snapshot to update AuthContext
       toast.success("You are now a Premium user for 1 month!");
     } catch (err) {
       console.error("Error upgrading:", err);
@@ -46,13 +47,15 @@ const Subscribe = () => {
 
   const paystackProps = {
     email: currentUser?.email,
-    amount: 5000 * 100, // 5000 NGN in kobo
+    amount: 5000 * 100, // ₦5000 in kobo
     publicKey: "pk_test_77dd0b5408bb0b896b387ce76065a97c82eb7498",
     currency: "NGN",
     text: loading ? "Processing..." : "Upgrade to Premium (₦5,000 / 1 month)",
     onSuccess: () => handleUpgradeBackend(),
     onClose: () => toast("Payment cancelled."),
   };
+
+  if (!currentUser) return <p className="text-center mt-20 text-white">Please sign in first.</p>;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-700 to-purple-500 text-white p-4">

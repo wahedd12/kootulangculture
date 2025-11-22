@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
-// Towns & kings
 const townsQuestions = [
   { question: "Who is the king of Ibadan?", answer: "Olubadan" },
   { question: "Who is the king of Oyo?", answer: "Alaafin" },
@@ -17,14 +16,13 @@ const townsQuestions = [
   { question: "Who is the king of Ijebu?", answer: "Awujale of Ijebu" },
 ];
 
-// Shuffle helper
 const shuffleArray = (array) => [...array].sort(() => 0.5 - Math.random());
 const generateOptions = (correctAnswer) => {
-  const otherAnswers = townsQuestions.map(q => q.answer).filter(ans => ans !== correctAnswer);
-  return shuffleArray([correctAnswer, ...shuffleArray(otherAnswers).slice(0,3)]);
+  const otherAnswers = townsQuestions.map(q => q.answer).filter(a => a !== correctAnswer);
+  return shuffleArray([correctAnswer, ...shuffleArray(otherAnswers).slice(0, 3)]);
 };
 
-const QuizTwo = () => {
+const QuizTwo = ({ premiumExpired = false }) => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -36,48 +34,37 @@ const QuizTwo = () => {
   const [alertMsg, setAlertMsg] = useState("");
 
   useEffect(() => {
-    const qWithOptions = townsQuestions.map(q => ({ ...q, options: generateOptions(q.answer) }));
+    const qWithOptions = townsQuestions.map(q => ({
+      ...q,
+      options: generateOptions(q.answer)
+    }));
     setQuestions(shuffleArray(qWithOptions));
   }, []);
 
   const handleChoiceClick = (choice) => setSelectedChoice(choice);
-  const displayAlert = (msg) => {
-    setAlertMsg(msg);
-    setTimeout(() => setAlertMsg(""), 2000);
-  };
+  const displayAlert = (msg) => { setAlertMsg(msg); setTimeout(() => setAlertMsg(""), 2000); };
+
   const nextQuestion = () => {
-    if (!selectedChoice) {
-      displayAlert("Please select an answer!");
-      return;
-    }
+    if (!selectedChoice) { displayAlert("Please select an answer!"); return; }
     if (selectedChoice === questions[currentIndex].answer) setScore(prev => prev + 1);
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex(prev => prev + 1);
-      setSelectedChoice("");
-    } else setQuizOver(true);
+    if (currentIndex + 1 < questions.length) { setCurrentIndex(prev => prev + 1); setSelectedChoice(""); }
+    else setQuizOver(true);
   };
+
   const playAgain = () => {
     const qWithOptions = townsQuestions.map(q => ({ ...q, options: generateOptions(q.answer) }));
     setQuestions(shuffleArray(qWithOptions));
     setCurrentIndex(0); setSelectedChoice(""); setScore(0); setQuizOver(false);
   };
 
-  // Premium check
-  const now = new Date();
-  const expiry = currentUser?.premiumExpiry ? new Date(currentUser.premiumExpiry) : null;
-  const hasPremium = currentUser?.isPremium && expiry && expiry > now;
+  const handleUpgrade = () => { toast("Upgrade to Premium to access full quizzes!"); navigate("/subscribe"); };
 
-  if (!hasPremium) {
+  if (premiumExpired) {
     return (
       <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96 mx-auto mt-20">
         <h2 className="text-2xl font-bold">Premium Required!</h2>
-        <p>You need Premium access to play this quiz.</p>
-        <button
-          onClick={() => navigate("/subscribe")}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300"
-        >
-          Upgrade Now
-        </button>
+        <p>Your Premium access has expired. Renew to continue full quizzes.</p>
+        <button onClick={handleUpgrade} className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300">Renew Premium</button>
       </div>
     );
   }
@@ -93,34 +80,18 @@ const QuizTwo = () => {
           <div className="question text-2xl mb-4">{questions[currentIndex].question}</div>
           <div className="choices flex flex-col items-center gap-2 w-full md:w-3/5">
             {questions[currentIndex].options.map(choice => (
-              <div
-                key={choice}
-                className={`choice w-full p-3 rounded-lg cursor-pointer text-center border border-gray-300 hover:bg-gray-200 hover:text-black transition-all duration-300 ${
-                  selectedChoice === choice ? "bg-blue-600 text-white border-blue-700" : "bg-white text-black"
-                }`}
-                onClick={() => handleChoiceClick(choice)}
-              >
+              <div key={choice} className={`choice w-full p-3 rounded-lg cursor-pointer text-center border border-gray-300 hover:bg-gray-200 hover:text-black transition-all duration-300 ${selectedChoice===choice ? "bg-blue-600 text-white border-blue-700" : "bg-white text-black"}`} onClick={() => handleChoiceClick(choice)}>
                 {choice}
               </div>
             ))}
           </div>
-          <button
-            onClick={nextQuestion}
-            className="bg-green-700 px-6 py-2 rounded mt-4 hover:bg-green-500"
-          >
-            Next
-          </button>
+          <button onClick={nextQuestion} className="bg-green-700 px-6 py-2 rounded mt-4 hover:bg-green-500">Next</button>
         </>
       ) : (
         <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96">
           <h2 className="text-3xl font-bold">Quiz Completed!</h2>
           <p className="text-xl">You scored {score} out of {questions.length}</p>
-          <button
-            onClick={playAgain}
-            className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500"
-          >
-            Play Again
-          </button>
+          <button onClick={playAgain} className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-500">Play Again</button>
         </div>
       )}
     </div>
