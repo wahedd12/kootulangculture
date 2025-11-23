@@ -87,7 +87,7 @@ const QuizOne = ({ premiumExpired = false }) => {
     return (
       <div className="text-center space-y-4 bg-white text-black p-6 rounded-xl shadow-lg w-96 mx-auto mt-20">
         <h2 className="text-2xl font-bold">Premium Required!</h2>
-        <p>Your Premium access has expired. Renew to continue full quizzes.</p>
+        <p>Get Premium to access full quizzes.</p>
         <button onClick={handleUpgrade} className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-300">
           Renew Premium
         </button>
