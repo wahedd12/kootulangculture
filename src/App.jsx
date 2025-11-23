@@ -1,20 +1,19 @@
+// src/App.jsx
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 
-// ✅ Corrected import: AuthProvider is now a named export
 import { AuthProvider, useAuth } from "./context/AuthContext";
-
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import QuizOne from "./pages/QuizOne";   // Yoruba Numbers Quiz
+import QuizOne from "./pages/QuizOne";
 import QuizTwo from "./pages/QuizTwo";
 import DemoQuiz from "./pages/DemoQuiz";
 import Subscribe from "./pages/Subscribe";
-
+import ResetPassword from "./pages/ResetPassword";
 
 const NavItem = ({ to, children, onClick }) => (
   <Link
@@ -38,6 +37,7 @@ const DropdownItem = ({ to, children, onClick }) => (
 
 const AppContent = () => {
   const { currentUser, signIn, signUp, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const [showSignIn, setShowSignIn] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
@@ -173,9 +173,12 @@ const AppContent = () => {
           <div className="bg-white p-6 rounded-lg shadow w-80">
             <h2 className="text-xl font-bold mb-4">Sign In</h2>
             <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full mb-2 p-2 border rounded"/>
-            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full mb-4 p-2 border rounded"/>
+            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full mb-2 p-2 border rounded"/>
             {error && <p className="text-red-500 mb-2">{error}</p>}
             <button onClick={handleSignInClick} className="w-full bg-green-600 text-white py-2 rounded mb-2 hover:bg-green-700 transition-colors duration-300">Login</button>
+            <button className="text-blue-500 underline text-sm mb-2" onClick={() => { setShowSignIn(false); navigate("/reset-password"); }}>
+              Forgot Password?
+            </button>
             <button onClick={() => setShowSignIn(false)} className="w-full text-gray-600 hover:text-gray-800 transition-colors duration-300">Close</button>
           </div>
         </div>
@@ -202,14 +205,14 @@ const AppContent = () => {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
 
-          {/* Demo Quiz accessible to logged-in users */}
+          {/* Demo Quiz */}
           <Route path="/demo-quiz" element={
             <ProtectedRoute>
               <DemoQuiz />
             </ProtectedRoute>
           } />
 
-          {/* Full quizzes accessible only to premium users */}
+          {/* Full quizzes (premium only) */}
           <Route path="/quiz-one" element={
             <ProtectedRoute premiumOnly={true}>
               <QuizOne />
@@ -221,14 +224,17 @@ const AppContent = () => {
             </ProtectedRoute>
           } />
 
-          {/* Premium subscription page */}
+          {/* Subscription */}
           <Route path="/subscribe" element={
             <ProtectedRoute>
               <Subscribe />
             </ProtectedRoute>
           } />
 
-          {/* Redirect unknown routes to home */}
+          {/* Reset Password */}
+          <Route path="/reset-password" element={<ResetPassword />} />
+
+          {/* Redirect unknown routes */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
