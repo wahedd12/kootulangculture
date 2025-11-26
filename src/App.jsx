@@ -162,6 +162,49 @@ const AppContent = () => {
 
           <NavItem to="/about" onClick={() => setShowMobileMenu(false)}>About Us</NavItem>
           <NavItem to="/contact" onClick={() => setShowMobileMenu(false)}>Contact Us</NavItem>
+
+          {/* ⭐ MOBILE AUTH BUTTONS (Added Section) */}
+          <div className="flex flex-col px-4 py-2 border-t border-gray-700 mt-2">
+            {currentUser ? (
+              <>
+                <span className="py-2 text-green-400">
+                  {currentUser.displayName || currentUser.email}
+                </span>
+
+                <button
+                  onClick={() => {
+                    handleLogOutClick();
+                    setShowMobileMenu(false);
+                  }}
+                  className="px-4 py-2 border border-red-500 text-red-400 rounded mb-2 hover:bg-red-600 hover:text-white transition-all duration-300"
+                >
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setShowSignIn(true);
+                    setShowMobileMenu(false);
+                  }}
+                  className="px-4 py-2 border border-green-500 text-green-400 rounded mb-2 hover:bg-green-700 hover:text-white transition-all duration-300"
+                >
+                  Sign In
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowSignUp(true);
+                    setShowMobileMenu(false);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-all duration-300"
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
