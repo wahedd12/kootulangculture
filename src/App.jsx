@@ -141,7 +141,7 @@ const AppContent = () => {
         </button>
 
         {/* MOBILE NAV */}
-        <div className={`md:hidden absolute top-full left-0 w-full bg-[#110303] border-t border-black flex flex-col z-30 overflow-hidden transition-all duration-300 ${showMobileMenu ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}>
+        <div className={`md:hidden absolute top-full left-0 w-full bg-[#110303] border-t border-black flex flex-col z-30 overflow-y-auto transition-all duration-300 ${showMobileMenu ? "max-h-[80vh] opacity-100" : "max-h-0 opacity-0"}`}>
           <NavItem to="/" onClick={() => setShowMobileMenu(false)}>Home</NavItem>
 
           <div className="relative">
@@ -152,7 +152,7 @@ const AppContent = () => {
               Our Apps
             </button>
             {currentUser && (
-              <div className={`flex flex-col overflow-hidden transition-all duration-300 ${showMobileDropdown ? "max-h-52" : "max-h-0"}`}>
+              <div className={`flex flex-col overflow-y-auto transition-all duration-300 ${showMobileDropdown ? "max-h-48" : "max-h-0"}`}>
                 <DropdownItem to="/demo-quiz" onClick={() => setShowMobileMenu(false)}>Demo Quiz</DropdownItem>
                 <DropdownItem to="/quiz-one" onClick={() => setShowMobileMenu(false)}>Quiz One</DropdownItem>
                 <DropdownItem to="/quiz-two" onClick={() => setShowMobileMenu(false)}>Quiz Two</DropdownItem>
@@ -163,14 +163,11 @@ const AppContent = () => {
           <NavItem to="/about" onClick={() => setShowMobileMenu(false)}>About Us</NavItem>
           <NavItem to="/contact" onClick={() => setShowMobileMenu(false)}>Contact Us</NavItem>
 
-          {/* ⭐ MOBILE AUTH BUTTONS (Added Section) */}
+          {/* MOBILE AUTH BUTTONS */}
           <div className="flex flex-col px-4 py-2 border-t border-gray-700 mt-2">
             {currentUser ? (
               <>
-                <span className="py-2 text-green-400">
-                  {currentUser.displayName || currentUser.email}
-                </span>
-
+                <span className="py-2 text-green-400">{currentUser.displayName || currentUser.email}</span>
                 <button
                   onClick={() => {
                     handleLogOutClick();
@@ -192,7 +189,6 @@ const AppContent = () => {
                 >
                   Sign In
                 </button>
-
                 <button
                   onClick={() => {
                     setShowSignUp(true);
